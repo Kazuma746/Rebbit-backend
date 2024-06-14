@@ -91,7 +91,6 @@ router.get('/tags/popular', async (req, res) => {
   }
 });
 
-
 // @route   GET api/posts
 // @desc    Récupérer tous les posts
 // @access  Public
@@ -110,7 +109,7 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id).populate('user', 'pseudo').populate('comments'); 
+    const post = await Post.findById(req.params.id).populate('user', 'pseudo').populate('comments');
     if (!post) {
       return res.status(404).json({ msg: 'Post not found' });
     }
@@ -191,6 +190,49 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).send('Erreur du serveur');
   }
 });
+
+// @route   PUT api/posts/state/:id
+// @desc    Mettre à jour l'état d'un post
+// @access  Privé
+router.put(
+  '/state/:id',
+  [
+    auth,
+    [
+      check('state', 'L\'état est requis').not().isEmpty().isIn(['draft', 'published', 'archived']),
+    ],
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { state } = req.body;
+
+    try {
+      let post = await Post.findById(req.params.id);
+
+      if (!post) return res.status(404).json({ msg: 'Post non trouvé' });
+
+      // Vérifier l'utilisateur ou l'admin
+      const user = await User.findById(req.user.id).select('-password');
+      if (post.user.toString() !== req.user.id && user.role !== 'admin') {
+        return res.status(401).json({ msg: 'Utilisateur non autorisé' });
+      }
+
+      post.state = state;
+      post.date_edited = Date.now();  // Mettre à jour la date de modification
+
+      await post.save();
+
+      res.json(post);
+    } catch (err) {
+      console.error('Error updating post:', err.message);
+      res.status(500).send('Erreur du serveur');
+    }
+  }
+);
 
 // @route   PUT api/posts/:id
 // @desc    Mettre à jour un post
