@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const express = require('express');
 const connectDB = require('./config/db');
-const cors = require('cors'); 
+const cors = require('cors');
 const uploadRouter = require('./routes/upload');
 const nodemailer = require('nodemailer');
 
@@ -18,7 +18,7 @@ connectDB();
 
 // Init middleware
 app.use(express.json({ extended: false }));
-app.use(cors()); 
+app.use(cors());
 app.use('/uploads', express.static('uploads'));
 app.use('/api/upload', uploadRouter);
 
